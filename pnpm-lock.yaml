@@ -55,12 +55,6 @@ importers:
         specifier: ^4.1.10
         version: 4.1.10(@types/node@24.13.3)(vite@8.2.0(@types/node@24.13.3)(esbuild@0.28.1)(tsx@4.23.5))
 
-  examples/minimal:
-    devDependencies:
-      '@alysoid/ahk-build':
-        specifier: workspace:*
-        version: link:../..
-
 packages:
 
   '@esbuild/aix-ppc64@0.28.1':

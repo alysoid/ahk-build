@@ -9,6 +9,6 @@
     "build": "ahk-build build"
   },
   "devDependencies": {
-    "@alysoid/ahk-build": "workspace:*"
+    "@alysoid/ahk-build": "0.1.0"
   }
 }
