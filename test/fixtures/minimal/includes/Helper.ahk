@@ -1,0 +1,3 @@
+FixtureHelper() {
+  return true
+}

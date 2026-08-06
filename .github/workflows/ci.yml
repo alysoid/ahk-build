@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: windows-latest
+    env:
+      AHK_BUILD_INTEGRATION: "1"
+      AHK_BUILD_TARBALL_SMOKE_WINDOWS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - id: pack
+        run: pnpm pack:check
+      - run: node scripts/tarball-smoke.mjs "${{ steps.pack.outputs.tarball }}"

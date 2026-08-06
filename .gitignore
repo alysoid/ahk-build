@@ -1,0 +1,9 @@
+node_modules/
+dist/
+coverage/
+.artifacts/
+.env
+.DS_Store
+*.tgz
+.ahk-build/
+build/

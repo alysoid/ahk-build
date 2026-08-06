@@ -1,0 +1,71 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify canonical repository
+        env:
+          EXPECTED_REPOSITORY: alysoid/ahk-build
+        run: |
+          if [ "$GITHUB_REPOSITORY" != "$EXPECTED_REPOSITORY" ]; then
+            echo "Expected $EXPECTED_REPOSITORY, got $GITHUB_REPOSITORY" >&2
+            exit 1
+          fi
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - name: Verify npm Trusted Publishing prerequisites
+        run: |
+          npm_version="$(npm --version)"
+          node -e 'const [major, minor, patch] = process.argv[1].split(".").map(Number); if (major < 11 || (major === 11 && minor < 5) || (major === 11 && minor === 5 && patch < 1)) process.exit(1)' "$npm_version"
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - name: Verify tag and package version
+        run: node scripts/verify-release-tag.mjs "$GITHUB_REF_NAME"
+      - run: pnpm check
+      - id: pack
+        run: pnpm pack:check
+      - name: Smoke test the exact tarball
+        run: node scripts/tarball-smoke.mjs "${{ steps.pack.outputs.tarball }}"
+      - name: Create draft GitHub Release with exact artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          TARBALL: ${{ steps.pack.outputs.tarball }}
+          CHECKSUM: ${{ steps.pack.outputs.checksum }}
+        run: >-
+          gh release create "$TAG" "$TARBALL" "$CHECKSUM"
+          --repo "$GITHUB_REPOSITORY"
+          --title "@alysoid/ahk-build $TAG"
+          --notes-file CHANGELOG.md
+          --draft
+          --verify-tag
+      - name: Publish exact tarball to npm with provenance
+        env:
+          TARBALL: ${{ steps.pack.outputs.tarball }}
+        run: npm publish "$TARBALL" --provenance --access public
+      - name: Publish the prepared GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --latest
+      - name: Verify published package and release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          npm view "@alysoid/ahk-build@${TAG#v}" version
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json tagName,isDraft,assets

@@ -1,0 +1,14 @@
+{
+  "name": "minimal-ahk-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "doctor": "ahk-build doctor",
+    "dev": "ahk-build run",
+    "build": "ahk-build build"
+  },
+  "devDependencies": {
+    "@alysoid/ahk-build": "workspace:*"
+  }
+}
