@@ -33,6 +33,9 @@ describe("publish workflow", () => {
     expect(workflow).toContain("release_flags+=(--prerelease --latest=false)");
     expect(workflow).toContain("release_flags+=(--latest)");
     expect(workflow).toContain("release_flags+=(--prerelease)");
+    expect(workflow).toContain("for attempt in {1..6}; do");
+    expect(workflow).toContain("sleep 10");
+    expect(workflow).toContain("Published package metadata is not visible yet");
     expect(npmPublish).toBeGreaterThan(draft);
     expect(publish).toBeGreaterThan(npmPublish);
   });

@@ -93,5 +93,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
         run: |
-          npm view "@alysoid/ahk-build@${TAG#v}" version
+          for attempt in {1..6}; do
+            if npm view "@alysoid/ahk-build@${TAG#v}" version; then
+              break
+            fi
+            if [[ "$attempt" == "6" ]]; then
+              echo "Published package version is still unavailable after $attempt attempts." >&2
+              exit 1
+            fi
+            echo "Published package metadata is not visible yet (attempt $attempt/6); retrying in 10s."
+            sleep 10
+          done
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json tagName,isDraft,assets
