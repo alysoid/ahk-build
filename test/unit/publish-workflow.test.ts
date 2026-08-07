@@ -25,19 +25,15 @@ describe("publish workflow", () => {
   it("keeps the release draft until the channel-specific npm publish succeeds", async () => {
     const workflow = await readFile(workflowPath, "utf8");
     const npmPublish = workflow.indexOf('npm publish "$TARBALL"');
-    const stableDraft = workflow.indexOf("Create stable GitHub Release draft");
-    const prereleaseDraft = workflow.indexOf("Create prerelease GitHub Release draft");
-    const stablePublish = workflow.indexOf("Publish the prepared stable GitHub Release");
-    const prereleasePublish = workflow.indexOf("Publish the prepared prerelease GitHub Release");
+    const draft = workflow.indexOf("Create GitHub Release draft");
+    const publish = workflow.indexOf("Publish the prepared GitHub Release");
 
     expect(workflow).toContain('echo "npm_tag=next"');
     expect(workflow).toContain('echo "npm_tag=latest"');
-    expect(workflow).toContain("--prerelease");
-    expect(workflow).toContain("--latest=false");
-    expect(workflow).toContain("--latest\n");
-    expect(npmPublish).toBeGreaterThan(stableDraft);
-    expect(npmPublish).toBeGreaterThan(prereleaseDraft);
-    expect(stablePublish).toBeGreaterThan(npmPublish);
-    expect(prereleasePublish).toBeGreaterThan(npmPublish);
+    expect(workflow).toContain("release_flags+=(--prerelease --latest=false)");
+    expect(workflow).toContain("release_flags+=(--latest)");
+    expect(workflow).toContain("release_flags+=(--prerelease)");
+    expect(npmPublish).toBeGreaterThan(draft);
+    expect(publish).toBeGreaterThan(npmPublish);
   });
 });

@@ -50,54 +50,44 @@ jobs:
         run: pnpm pack:check
       - name: Smoke test the exact tarball
         run: pnpm run tarball:smoke "${{ steps.pack.outputs.tarball }}"
-      - name: Create stable GitHub Release draft
-        if: steps.release.outputs.prerelease == 'false'
+      - name: Create GitHub Release draft
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
           TARBALL: ${{ steps.pack.outputs.tarball }}
           CHECKSUM: ${{ steps.pack.outputs.checksum }}
-        run: >-
-          gh release create "$TAG" "$TARBALL" "$CHECKSUM"
-          --repo "$GITHUB_REPOSITORY"
-          --title "@alysoid/ahk-build $TAG"
-          --notes-file CHANGELOG.md
-          --draft
-          --latest
-          --verify-tag
-      - name: Create prerelease GitHub Release draft
-        if: steps.release.outputs.prerelease == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
-          TARBALL: ${{ steps.pack.outputs.tarball }}
-          CHECKSUM: ${{ steps.pack.outputs.checksum }}
-        run: >-
-          gh release create "$TAG" "$TARBALL" "$CHECKSUM"
-          --repo "$GITHUB_REPOSITORY"
-          --title "@alysoid/ahk-build $TAG"
-          --notes-file CHANGELOG.md
-          --draft
-          --prerelease
-          --latest=false
-          --verify-tag
+          PRERELEASE: ${{ steps.release.outputs.prerelease }}
+        run: |
+          release_flags=(--draft)
+          if [[ "$PRERELEASE" == "true" ]]; then
+            release_flags+=(--prerelease --latest=false)
+          else
+            release_flags+=(--latest)
+          fi
+          gh release create "$TAG" "$TARBALL" "$CHECKSUM" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "@alysoid/ahk-build $TAG" \
+            --notes-file CHANGELOG.md \
+            "${release_flags[@]}" \
+            --verify-tag
       - name: Publish exact tarball to npm with provenance
         env:
           TARBALL: ${{ steps.pack.outputs.tarball }}
           NPM_TAG: ${{ steps.release.outputs.npm_tag }}
         run: npm publish "$TARBALL" --registry=https://registry.npmjs.org --provenance --access public --tag "$NPM_TAG"
-      - name: Publish the prepared stable GitHub Release
-        if: steps.release.outputs.prerelease == 'false'
+      - name: Publish the prepared GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
-        run: gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --latest
-      - name: Publish the prepared prerelease GitHub Release
-        if: steps.release.outputs.prerelease == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
-        run: gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease
+          PRERELEASE: ${{ steps.release.outputs.prerelease }}
+        run: |
+          release_flags=(--draft=false)
+          if [[ "$PRERELEASE" == "true" ]]; then
+            release_flags+=(--prerelease)
+          else
+            release_flags+=(--latest)
+          fi
+          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" "${release_flags[@]}"
       - name: Verify published package and release assets
         env:
           GH_TOKEN: ${{ github.token }}
