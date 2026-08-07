@@ -25,7 +25,6 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
-          registry-url: https://registry.npmjs.org
           package-manager-cache: false
       - name: Verify npm Trusted Publishing prerequisites
         run: |
@@ -86,7 +85,7 @@ jobs:
         env:
           TARBALL: ${{ steps.pack.outputs.tarball }}
           NPM_TAG: ${{ steps.release.outputs.npm_tag }}
-        run: npm publish "$TARBALL" --provenance --access public --tag "$NPM_TAG"
+        run: npm publish "$TARBALL" --registry=https://registry.npmjs.org --provenance --access public --tag "$NPM_TAG"
       - name: Publish the prepared stable GitHub Release
         if: steps.release.outputs.prerelease == 'false'
         env:

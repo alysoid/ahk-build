@@ -13,11 +13,12 @@ describe("publish workflow", () => {
     expect(workflow).toContain("actions/checkout@v7");
     expect(workflow).toContain("actions/setup-node@v7");
     expect(workflow).toContain("node-version: 24");
-    expect(workflow).toContain("registry-url: https://registry.npmjs.org");
+    expect(workflow).not.toContain("registry-url:");
     expect(workflow).toContain("package-manager-cache: false");
     expect(workflow).not.toContain("always-auth");
     expect(workflow).not.toContain("NPM_TOKEN");
     expect(workflow).toContain("id-token: write");
+    expect(workflow).toContain('npm publish "$TARBALL" --registry=https://registry.npmjs.org');
     expect(workflow).toContain("--provenance");
   });
 
