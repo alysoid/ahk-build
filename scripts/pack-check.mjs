@@ -48,14 +48,22 @@ async function ensureBuildOutput() {
 }
 
 async function runPackageCommand() {
-  const command = "pnpm";
+  const npmExecPath = process.env.npm_execpath;
+  if (!npmExecPath) {
+    throw new Error("Cannot run pnpm pack: npm_execpath is not available.");
+  }
+
   await new Promise((resolve, reject) => {
-    const child = spawn(command, ["pack", "--pack-destination", artifactsDirectory], {
-      cwd: root,
-      stdio: "inherit",
-      shell: false,
-      windowsHide: true,
-    });
+    const child = spawn(
+      process.execPath,
+      [npmExecPath, "pack", "--pack-destination", artifactsDirectory],
+      {
+        cwd: root,
+        stdio: "inherit",
+        shell: false,
+        windowsHide: true,
+      },
+    );
     child.once("error", reject);
     child.once("exit", (code) => {
       if (code === 0) resolve();
