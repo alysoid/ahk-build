@@ -10,22 +10,12 @@ import { resolveToolchain } from "../toolchain/provider.js";
 import { copyProjectFiles } from "./copy-files.js";
 import { prepareSource } from "./prepare-source.js";
 
-export interface CompileOptions {
-  installToolchain?: boolean;
-}
-
-export async function compileProject(
-  config: ResolvedConfig,
-  logger: Logger,
-  options: CompileOptions = {},
-): Promise<string> {
+export async function compileProject(config: ResolvedConfig, logger: Logger): Promise<string> {
   if (process.platform !== "win32") {
     throw new AhkBuildError("WINDOWS_REQUIRED", "AutoHotkey compilation requires Windows.");
   }
 
-  const toolchain = await resolveToolchain(config, logger, {
-    install: options.installToolchain ?? true,
-  });
+  const toolchain = await resolveToolchain(config, logger, { install: true });
   const generatedSource = await prepareSource(config, logger);
   const output = getCompileOutput(config);
   await ensureDirectory(path.dirname(output));

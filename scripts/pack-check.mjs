@@ -3,7 +3,10 @@ import crypto from "node:crypto";
 import path from "node:path";
 import { gunzipSync } from "node:zlib";
 import { fileURLToPath } from "node:url";
-import { spawn } from "node:child_process";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+
+const execFileAsync = promisify(execFile);
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const packagePath = path.join(root, "package.json");
@@ -53,23 +56,20 @@ async function runPackageCommand() {
     throw new Error("Cannot run pnpm pack: npm_execpath is not available.");
   }
 
-  await new Promise((resolve, reject) => {
-    const child = spawn(
+  try {
+    const { stdout, stderr } = await execFileAsync(
       process.execPath,
       [npmExecPath, "pack", "--pack-destination", artifactsDirectory],
-      {
-        cwd: root,
-        stdio: "inherit",
-        shell: false,
-        windowsHide: true,
-      },
+      { cwd: root, shell: false, windowsHide: true },
     );
-    child.once("error", reject);
-    child.once("exit", (code) => {
-      if (code === 0) resolve();
-      else reject(new Error(`pnpm pack exited with code ${code ?? "unknown"}`));
-    });
-  });
+    process.stdout.write(stdout);
+    process.stderr.write(stderr);
+  } catch (error) {
+    if (error && typeof error === "object" && "stderr" in error) {
+      process.stderr.write(String(error.stderr));
+    }
+    throw error;
+  }
 }
 
 function validateManifest(actual, expected) {
