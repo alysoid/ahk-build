@@ -1,6 +1,6 @@
 {
   "name": "@alysoid/ahk-build",
-  "version": "0.1.0-rc.2",
+  "version": "0.1.0",
   "description": "A reproducible build, packaging, and release workflow for AutoHotkey v2 projects.",
   "keywords": [
     "autohotkey",
@@ -10,7 +10,7 @@
     "wix",
     "windows"
   ],
-  "license": "MIT",
+  "license": "ISC",
   "author": "Andrea Brandi",
   "type": "module",
   "sideEffects": false,
