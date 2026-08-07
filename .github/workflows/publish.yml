@@ -13,7 +13,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Verify canonical repository
         env:
           EXPECTED_REPOSITORY: alysoid/ahk-build
@@ -22,7 +22,7 @@ jobs:
             echo "Expected $EXPECTED_REPOSITORY, got $GITHUB_REPOSITORY" >&2
             exit 1
           fi
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
@@ -35,12 +35,24 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Verify tag and package version
         run: node scripts/verify-release-tag.mjs "$GITHUB_REF_NAME"
+      - name: Determine release channel
+        id: release
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          if [[ "$version" == *-* ]]; then
+            echo "npm_tag=next" >> "$GITHUB_OUTPUT"
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "npm_tag=latest" >> "$GITHUB_OUTPUT"
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
       - run: pnpm check
       - id: pack
         run: pnpm pack:check
       - name: Smoke test the exact tarball
         run: pnpm run tarball:smoke "${{ steps.pack.outputs.tarball }}"
-      - name: Create draft GitHub Release with exact artifacts
+      - name: Create stable GitHub Release draft
+        if: steps.release.outputs.prerelease == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
@@ -52,16 +64,41 @@ jobs:
           --title "@alysoid/ahk-build $TAG"
           --notes-file CHANGELOG.md
           --draft
+          --latest
+          --verify-tag
+      - name: Create prerelease GitHub Release draft
+        if: steps.release.outputs.prerelease == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          TARBALL: ${{ steps.pack.outputs.tarball }}
+          CHECKSUM: ${{ steps.pack.outputs.checksum }}
+        run: >-
+          gh release create "$TAG" "$TARBALL" "$CHECKSUM"
+          --repo "$GITHUB_REPOSITORY"
+          --title "@alysoid/ahk-build $TAG"
+          --notes-file CHANGELOG.md
+          --draft
+          --prerelease
+          --latest=false
           --verify-tag
       - name: Publish exact tarball to npm with provenance
         env:
           TARBALL: ${{ steps.pack.outputs.tarball }}
-        run: npm publish "$TARBALL" --provenance --access public
-      - name: Publish the prepared GitHub Release
+          NPM_TAG: ${{ steps.release.outputs.npm_tag }}
+        run: npm publish "$TARBALL" --provenance --access public --tag "$NPM_TAG"
+      - name: Publish the prepared stable GitHub Release
+        if: steps.release.outputs.prerelease == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
         run: gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --latest
+      - name: Publish the prepared prerelease GitHub Release
+        if: steps.release.outputs.prerelease == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease
       - name: Verify published package and release assets
         env:
           GH_TOKEN: ${{ github.token }}

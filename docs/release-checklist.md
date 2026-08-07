@@ -75,8 +75,13 @@ git push origin v0.1.0
 4. builds one tarball and runs the external smoke test against that same file;
 5. creates its checksum;
 6. creates a draft GitHub Release with the tarball and checksum;
-7. publishes that exact tarball to npm with provenance;
-8. publishes the prepared GitHub Release and verifies its assets.
+7. publishes that exact tarball to npm with provenance (`next` for a
+   prerelease version, `latest` for a stable version);
+8. publishes the prepared GitHub Release as a prerelease or stable/latest
+   release matching the package version, then verifies its assets.
+
+If npm publication fails, the GitHub Release remains a draft. It is made
+public only after npm accepts the exact tarball.
 
 The workflow uses OIDC; it must not require an npm write token. Scoped public
 packages require explicit public access on their first publication, which is
