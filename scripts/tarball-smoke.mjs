@@ -79,7 +79,11 @@ async function runNode(args, options = {}) {
 }
 
 async function runPnpm(args, options = {}) {
-  await run("pnpm", args, options);
+  const npmExecPath = process.env.npm_execpath;
+  if (!npmExecPath) {
+    throw new Error("Cannot run pnpm: npm_execpath is not available.");
+  }
+  await run(process.execPath, [npmExecPath, ...args], options);
 }
 
 async function run(command, args, options = {}) {

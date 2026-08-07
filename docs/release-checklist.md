@@ -43,7 +43,7 @@ On Windows, run the real managed toolchain and external tarball smoke test:
 $env:AHK_BUILD_INTEGRATION = "1"
 pnpm test
 $env:AHK_BUILD_TARBALL_SMOKE_WINDOWS = "1"
-node scripts/tarball-smoke.mjs .artifacts\alysoid-ahk-build-0.1.0.tgz
+pnpm run tarball:smoke .artifacts\alysoid-ahk-build-0.1.0.tgz
 ```
 
 The smoke test installs that exact tarball into a temporary consumer outside

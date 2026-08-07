@@ -24,4 +24,4 @@ jobs:
       - run: pnpm check
       - id: pack
         run: pnpm pack:check
-      - run: node scripts/tarball-smoke.mjs "${{ steps.pack.outputs.tarball }}"
+      - run: pnpm run tarball:smoke "${{ steps.pack.outputs.tarball }}"

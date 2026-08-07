@@ -39,7 +39,7 @@ jobs:
       - id: pack
         run: pnpm pack:check
       - name: Smoke test the exact tarball
-        run: node scripts/tarball-smoke.mjs "${{ steps.pack.outputs.tarball }}"
+        run: pnpm run tarball:smoke "${{ steps.pack.outputs.tarball }}"
       - name: Create draft GitHub Release with exact artifacts
         env:
           GH_TOKEN: ${{ github.token }}
