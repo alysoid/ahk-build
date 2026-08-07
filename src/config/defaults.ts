@@ -5,7 +5,7 @@ import type { ManagedToolSpec } from "./types.js";
 
 export const DEFAULT_AUTOHOTKEY: ManagedToolSpec = {
   version: "2.0.26",
-  url: "https://www.autohotkey.com/download/2.0/AutoHotkey_2.0.26.zip",
+  url: "https://github.com/AutoHotkey/AutoHotkey/releases/download/v2.0.26/AutoHotkey_2.0.26.zip",
   sha256: "43522aa3122a57784ac5db30abf85c2244475c36acd7796e2c993355f9e926ae",
   executable: "AutoHotkey64.exe",
 };
