@@ -99,17 +99,29 @@ The command supplies `ProductVersion`, `ProjectRoot`, `BuildDir`, and `DistDir` 
 
 ## Releases
 
-`release.repository` is required and is passed to the GitHub CLI's `--repo` option. Optional fields are `tag`, `title`, `notes`, `assets`, `draft`, and `prerelease`. Defaults are:
+`release.repository` is required and is passed to the GitHub CLI's `--repo` option. Optional fields are `tag`, `title`, `notes`, `assets`, `draft`, `prerelease`, `commitMessage`, and `signTag`. Defaults are:
 
 - `tag`: `v${packageVersion}`
 - `title`: `Release v${packageVersion}`
 - `notes`: `Release version ${packageVersion}`
 - `assets`: enabled portable and MSI outputs
+- `commitMessage`: `chore(release): prepare ${packageVersion}`
+- `signTag`: `true`
 
-Release verifies every asset, rejects duplicate upload basenames, and invokes
-`gh release create --verify-tag`; it does not build artifacts or create a
-missing tag. A configured custom tag remains allowed, but the caller must
-create and push that tag first.
+`ahk-build release [version]` requires a clean Git worktree and a current
+upstream branch. A positional version updates only `package.json`, then the
+command builds all enabled artifacts, runs `beforeRelease`, asks for
+confirmation, commits the version when changed, creates and verifies the tag,
+atomically pushes branch and tag, and creates a draft GitHub release with
+`--verify-tag`. Local and uploaded asset names, sizes, and SHA-256 digests must
+match before the draft is published. Existing matching tags/releases are
+reused; incompatible state fails without force-push, deletion, or replacement.
+
+Use `--dry-run` for read-only Git/GitHub preflight, `--yes` when artifact
+approval occurred outside the interactive command, and `--publish-only` to
+publish already-built assets from an existing remote tag. Setting `draft: true`
+leaves the verified release as a draft. Setting `signTag: false` creates an
+annotated unsigned tag instead of the signed default.
 
 ## Hooks
 
@@ -119,4 +131,4 @@ Each hook is an array of `{ command, args?, cwd?, env? }`. Commands run directly
 
 ## Template variables
 
-Templates are supported in `compile.replacements` values; portable `output`, `from`, and `to` values; WiX `source`, `output`, and definition values; and release `tag`, `title`, `notes`, and asset values. Available variables are `${packageName}`, `${packageVersion}`, `${appName}`, `${artifactName}`, `${executable}`, `${projectRoot}`, `${buildDir}`, `${distDir}`, and `${workDir}`. Unknown variables are preserved for consumer tools.
+Templates are supported in `compile.replacements` values; portable `output`, `from`, and `to` values; WiX `source`, `output`, and definition values; and release `tag`, `title`, `notes`, `commitMessage`, and asset values. Available variables are `${packageName}`, `${packageVersion}`, `${appName}`, `${artifactName}`, `${executable}`, `${projectRoot}`, `${buildDir}`, `${distDir}`, and `${workDir}`. Unknown variables are preserved for consumer tools.

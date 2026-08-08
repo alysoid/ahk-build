@@ -9,3 +9,4 @@
 7. Replace the previous build commands with package scripts.
 8. Run `doctor`, `build`, and a clean-machine smoke test.
 9. Compare EXE version resources, ZIP contents, MSI install/upgrade/uninstall behavior, and release assets before deleting the old workflow.
+10. Run `ahk-build release <version> --dry-run`, then replace manual version, build, commit, tag, push, and GitHub upload steps with the confirmed release command.

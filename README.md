@@ -16,8 +16,10 @@ A Windows-first, reproducible build workflow for AutoHotkey v2 applications. The
 ## Requirements
 
 - Node.js 24 or newer.
-- Windows for `setup`, `run`, `compile`, `build`, and `msi`.
+- Windows for `setup`, `run`, `compile`, `build`, `msi`, and end-to-end `release`.
 - WiX must be installed separately when `wix` is enabled.
+- Git and an upstream branch are required for end-to-end `release`; Git tag
+  signing must be configured unless `release.signTag` is `false`.
 - GitHub CLI must be installed and authenticated for `release`.
 
 ## Installation
@@ -76,11 +78,11 @@ The default replacement changes every `__APP_VERSION__` token in the generated s
 
 ## Commands
 
-`doctor` validates configuration and referenced files, then reports toolchain status. `setup` installs the managed toolchain. `run` executes the source with AutoHotkey. `clean` removes generated project files. `compile` generates compiler metadata and builds the executable. `zip` creates the configured portable archive (`package` is an alias). `msi` invokes WiX when configured. `build` cleans, compiles, and creates each enabled artifact. `release` publishes existing configured assets through GitHub CLI.
+`doctor` validates configuration and referenced files, then reports toolchain status. `setup` installs the managed toolchain. `run` executes the source with AutoHotkey. `clean` removes generated project files. `compile` generates compiler metadata and builds the executable. `zip` creates the configured deterministic portable archive (`package` is an alias). `msi` invokes WiX when configured. `build` cleans, compiles, and creates each enabled artifact. `release [version]` performs Git preflight, optionally updates `package.json`, builds, confirms, commits, tags, atomically pushes, and publishes verified GitHub assets.
 
 The package's own npm and GitHub publication is handled by the tag-triggered Trusted Publishing workflow; consumer `release` commands do not publish this npm package.
 
-Global options include `--cwd`, `--config`, `--verbose`, `--force` for toolchain setup, and `--cache` for a full clean. Arguments after `--` are forwarded by `run` to the AHK script.
+Global options include `--cwd`, `--config`, `--verbose`, `--force` for toolchain setup, and `--cache` for a full clean. Release adds `--dry-run`, `--yes`, and `--publish-only`. Arguments after `--` are forwarded by `run` to the AHK script.
 
 ## Documentation
 

@@ -115,6 +115,8 @@ export interface ReleaseConfig {
   assets?: string[];
   draft?: boolean;
   prerelease?: boolean;
+  commitMessage?: string;
+  signTag?: boolean;
 }
 
 export interface AhkBuildConfig {

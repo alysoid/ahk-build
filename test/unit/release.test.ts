@@ -1,10 +1,12 @@
+import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { createGitHubRelease, type ReleaseProcessRunner } from "../../src/release/github.js";
-import { createLogger } from "../../src/core/logger.js";
 import { loadConfig } from "../../src/config/load-config.js";
+import { createLogger } from "../../src/core/logger.js";
+import type { CaptureProcessRunner, ProcessRunner } from "../../src/core/process.js";
+import { createGitHubRelease } from "../../src/release/github.js";
 
 import { copyFixture } from "../helpers.js";
 
@@ -22,10 +24,7 @@ describe("createGitHubRelease", () => {
     const calls: string[][] = [];
 
     await expect(
-      createGitHubRelease(releaseConfig, createLogger(false), (command, args) => {
-        calls.push([command, ...args]);
-        return Promise.resolve();
-      }),
+      createGitHubRelease(releaseConfig, createLogger(false), record(calls), capture([])),
     ).rejects.toMatchObject({ code: "MISSING_FILE" });
     expect(calls).toEqual([]);
   });
@@ -47,24 +46,25 @@ describe("createGitHubRelease", () => {
     const calls: string[][] = [];
 
     await expect(
-      createGitHubRelease(releaseConfig, createLogger(false), (command, args) => {
-        calls.push([command, ...args]);
-        return Promise.resolve();
-      }),
+      createGitHubRelease(releaseConfig, createLogger(false), record(calls), capture([])),
     ).rejects.toMatchObject({ code: "DUPLICATE_RELEASE_ASSET" });
     expect(calls).toEqual([]);
   });
 
-  it("passes a verified tag to a controlled GitHub CLI boundary", async () => {
+  it("creates a verified draft before publishing it", async () => {
     const root = await copyFixture("minimal");
     const asset = path.join(root, "fixture.zip");
-    await fs.writeFile(asset, "fixture");
+    const body = Buffer.from("fixture");
+    await fs.writeFile(asset, body);
+    const digest = `sha256:${createHash("sha256").update(body).digest("hex")}`;
     const calls: string[][] = [];
-    const run: ReleaseProcessRunner = (command, args) => {
-      calls.push([command, ...args]);
-      return Promise.resolve();
-    };
+    const releases = [
+      failure(),
+      releaseJson(true, digest, body.byteLength),
+      releaseJson(false, digest, body.byteLength),
+    ];
     const config = await loadConfig({ cwd: root });
+
     await createGitHubRelease(
       {
         ...config,
@@ -74,24 +74,92 @@ describe("createGitHubRelease", () => {
         },
       },
       createLogger(false),
-      run,
+      record(calls),
+      capture(releases),
     );
 
-    expect(calls).toHaveLength(2);
-    expect(calls[0]).toEqual(["gh", "auth", "status"]);
-    expect(calls[1]).toEqual([
-      "gh",
-      "release",
-      "create",
-      "v1.2.3",
-      asset,
-      "--repo",
-      "alysoid/ahk-build-test",
-      "--verify-tag",
-      "--title",
-      "Release v1.2.3",
-      "--notes",
-      "Release version 1.2.3",
+    expect(calls).toEqual([
+      ["gh", "auth", "status"],
+      [
+        "gh",
+        "release",
+        "create",
+        "v1.2.3",
+        asset,
+        "--repo",
+        "alysoid/ahk-build-test",
+        "--verify-tag",
+        "--title",
+        "Release v1.2.3",
+        "--notes",
+        "Release version 1.2.3",
+        "--draft",
+      ],
+      ["gh", "release", "edit", "v1.2.3", "--repo", "alysoid/ahk-build-test", "--draft=false"],
     ]);
   });
+
+  it("accepts an already published release only when assets match", async () => {
+    const root = await copyFixture("minimal");
+    const body = Buffer.from("fixture");
+    await fs.writeFile(path.join(root, "fixture.zip"), body);
+    const digest = `sha256:${createHash("sha256").update(body).digest("hex")}`;
+    const config = await loadConfig({ cwd: root });
+    const calls: string[][] = [];
+    const releaseConfig = {
+      ...config,
+      release: { repository: "alysoid/ahk-build-test", assets: ["fixture.zip"] },
+    };
+
+    await createGitHubRelease(
+      releaseConfig,
+      createLogger(false),
+      record(calls),
+      capture([releaseJson(false, digest, body.byteLength)]),
+    );
+    expect(calls).toEqual([["gh", "auth", "status"]]);
+
+    await expect(
+      createGitHubRelease(
+        releaseConfig,
+        createLogger(false),
+        record([]),
+        capture([releaseJson(false, "sha256:wrong", body.byteLength)]),
+      ),
+    ).rejects.toMatchObject({ code: "RELEASE_ASSET_MISMATCH" });
+  });
 });
+
+function record(calls: string[][]): ProcessRunner {
+  return (command, args) => {
+    calls.push([command, ...args]);
+    return Promise.resolve();
+  };
+}
+
+function capture(results: Awaited<ReturnType<CaptureProcessRunner>>[]): CaptureProcessRunner {
+  let index = 0;
+  return () => Promise.resolve(results[index++] ?? failure());
+}
+
+function failure(): Awaited<ReturnType<CaptureProcessRunner>> {
+  return { exitCode: 1, signal: null, stdout: "", stderr: "not found" };
+}
+
+function releaseJson(
+  isDraft: boolean,
+  digest: string,
+  size: number,
+): Awaited<ReturnType<CaptureProcessRunner>> {
+  return {
+    exitCode: 0,
+    signal: null,
+    stderr: "",
+    stdout: JSON.stringify({
+      tagName: "v1.2.3",
+      isDraft,
+      isPrerelease: false,
+      assets: [{ name: "fixture.zip", size, digest }],
+    }),
+  };
+}

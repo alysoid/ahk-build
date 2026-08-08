@@ -32,10 +32,15 @@ WiX is optional. The package passes standard build definitions and consumer-defi
 
 ## Release layer
 
-The release module verifies every asset, rejects duplicate upload basenames, and
-passes `--verify-tag` before invoking `gh release create`. Release publication
-does not implicitly rebuild artifacts; this keeps build and publication
-independently reproducible.
+The release command orchestrates the existing build command, then delegates Git
+state/version handling and GitHub publication to focused release modules. Git
+preflight requires a clean, non-diverged upstream; release pushes are atomic and
+never force or rewrite tags.
+
+GitHub publication verifies every local asset, rejects duplicate upload
+basenames, creates a draft with `--verify-tag`, compares uploaded sizes and
+SHA-256 digests, and only then publishes it. `--publish-only` exposes this
+publication layer without rebuilding or changing Git.
 
 ## Extension policy
 

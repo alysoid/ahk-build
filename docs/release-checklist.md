@@ -113,7 +113,9 @@ declarations from a fresh external consumer.
 
 ## Consumer release command
 
-`ahk-build release` is separate from this package workflow. It does not build
-artifacts, verifies every configured asset before invoking GitHub CLI, rejects
-duplicate asset basenames, and uses `--verify-tag` so a missing remote tag does
-not get created implicitly.
+`ahk-build release <version>` is separate from this package's npm workflow. It
+builds the consumer, pauses for artifact approval, creates the configured
+release commit and tag, atomically pushes both, uploads assets to a draft,
+verifies their sizes and SHA-256 digests, then publishes. Start with
+`ahk-build release <version> --dry-run`; use `--yes` only after equivalent
+manual checks, or `--publish-only` to recover an already prepared tag/assets.

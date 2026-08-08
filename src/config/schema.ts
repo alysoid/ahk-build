@@ -130,6 +130,8 @@ export const configSchema = z.object({
         assets: z.array(z.string().min(1)).optional(),
         draft: z.boolean().optional(),
         prerelease: z.boolean().optional(),
+        commitMessage: z.string().min(1).optional(),
+        signTag: z.boolean().optional(),
       }),
     ])
     .optional(),

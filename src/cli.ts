@@ -22,6 +22,10 @@ interface ParsedArguments {
   verbose: boolean;
   force: boolean;
   includeCache: boolean;
+  dryRun: boolean;
+  yes: boolean;
+  publishOnly: boolean;
+  releaseVersion?: string;
   forwarded: string[];
 }
 
@@ -29,6 +33,7 @@ const HELP = `@alysoid/ahk-build
 
 Usage:
   ahk-build <command> [options] [-- forwarded arguments]
+  ahk-build release [version] [options]
 
 Commands:
   doctor      Validate the project and report toolchain status
@@ -39,7 +44,7 @@ Commands:
   zip         Create the configured deterministic portable archive
   msi         Build the optional WiX installer
   build       Clean, compile, and create enabled artifacts
-  release     Publish configured artifacts with GitHub CLI
+  release     Build, tag, push, and publish a release
 
 Options:
   --cwd <dir>       Project root (default: current directory)
@@ -47,6 +52,9 @@ Options:
   --verbose         Include debug details
   --force           Reinstall managed toolchain during setup
   --cache           Also remove the shared cache during clean
+  --dry-run         Validate and print the release plan without changes
+  --yes             Skip the release confirmation prompt
+  --publish-only    Publish existing release assets and tag
   -h, --help        Show help
   -v, --version     Show package version
 `;
@@ -96,7 +104,12 @@ async function main(): Promise<void> {
       await buildCommand(config, logger);
       break;
     case "release":
-      await releaseCommand(config, logger);
+      await releaseCommand(config, logger, {
+        ...(parsed.releaseVersion ? { version: parsed.releaseVersion } : {}),
+        dryRun: parsed.dryRun,
+        yes: parsed.yes,
+        publishOnly: parsed.publishOnly,
+      });
       break;
     default:
       throw new AhkBuildError("UNKNOWN_COMMAND", `Unknown command: ${parsed.command}`);
@@ -111,6 +124,9 @@ function parseArguments(args: string[]): ParsedArguments {
     verbose: false,
     force: false,
     includeCache: false,
+    dryRun: false,
+    yes: false,
+    publishOnly: false,
     forwarded,
   };
 
@@ -129,8 +145,13 @@ function parseArguments(args: string[]): ParsedArguments {
     if (value === "--verbose") result.verbose = true;
     else if (value === "--force") result.force = true;
     else if (value === "--cache") result.includeCache = true;
+    else if (value === "--dry-run") result.dryRun = true;
+    else if (value === "--yes") result.yes = true;
+    else if (value === "--publish-only") result.publishOnly = true;
     else if (value === "-h" || value === "--help") result.command = "help";
     else if (!result.command) result.command = value;
+    else if (result.command === "release" && !result.releaseVersion && !value.startsWith("-"))
+      result.releaseVersion = value;
     else throw new AhkBuildError("UNEXPECTED_ARGUMENT", `Unexpected argument: ${value}`);
   }
 
