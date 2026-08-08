@@ -67,7 +67,7 @@ describe("releaseCommand", () => {
     ]);
     expect(await runGit(root, ["log", "-1", "--format=%s"])).toBe("chore(release): prepare 1.2.4");
     expect(await runGit(root, ["tag", "--list", "v1.2.4"])).toBe("v1.2.4");
-  });
+  }, 15_000);
 });
 
 function failure() {

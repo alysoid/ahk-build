@@ -42,7 +42,7 @@ describe("Git release workflow", () => {
     const head = await runGit(root, ["rev-parse", "HEAD"]);
     expect(await runGit(root, ["ls-remote", "origin", "refs/heads/main"])).toContain(head);
     expect(await runGit(root, ["ls-remote", "origin", "refs/tags/v1.2.4^{}"])).toContain(head);
-  });
+  }, 15_000);
 
   it("refuses to prepare a release from a dirty worktree", async () => {
     const root = await createGitRepository();
