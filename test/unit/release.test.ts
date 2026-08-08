@@ -99,6 +99,45 @@ describe("createGitHubRelease", () => {
     ]);
   });
 
+  it("generates simple notes from commits when enabled", async () => {
+    const root = await copyFixture("minimal");
+    const body = Buffer.from("fixture");
+    await fs.writeFile(path.join(root, "fixture.zip"), body);
+    const digest = `sha256:${createHash("sha256").update(body).digest("hex")}`;
+    const calls: string[][] = [];
+    const captureResults = [
+      failure(),
+      { exitCode: 0, signal: null, stdout: "v1.2.2\n", stderr: "" },
+      {
+        exitCode: 0,
+        signal: null,
+        stdout: "fix: correct release notes\nfeat: add generated notes\n",
+        stderr: "",
+      },
+      releaseJson(true, digest, body.byteLength),
+      releaseJson(false, digest, body.byteLength),
+    ];
+    const config = await loadConfig({ cwd: root });
+
+    await createGitHubRelease(
+      {
+        ...config,
+        release: {
+          repository: "alysoid/ahk-build-test",
+          assets: ["fixture.zip"],
+          generateNotes: true,
+        },
+      },
+      createLogger(false),
+      record(calls),
+      capture(captureResults),
+    );
+
+    expect(calls.find((call) => call[1] === "release" && call[2] === "create")).toContain(
+      "## Changes\n\n- fix: correct release notes\n- feat: add generated notes",
+    );
+  });
+
   it("accepts an already published release only when assets match", async () => {
     const root = await copyFixture("minimal");
     const body = Buffer.from("fixture");

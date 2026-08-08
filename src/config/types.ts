@@ -112,6 +112,7 @@ export interface ReleaseConfig {
   tag?: string;
   title?: string;
   notes?: string;
+  generateNotes?: boolean;
   assets?: string[];
   draft?: boolean;
   prerelease?: boolean;

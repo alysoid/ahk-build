@@ -99,11 +99,12 @@ The command supplies `ProductVersion`, `ProjectRoot`, `BuildDir`, and `DistDir` 
 
 ## Releases
 
-`release.repository` is required and is passed to the GitHub CLI's `--repo` option. Optional fields are `tag`, `title`, `notes`, `assets`, `draft`, `prerelease`, `commitMessage`, and `signTag`. Defaults are:
+`release.repository` is required and is passed to the GitHub CLI's `--repo` option. Optional fields are `tag`, `title`, `notes`, `generateNotes`, `assets`, `draft`, `prerelease`, `commitMessage`, and `signTag`. Defaults are:
 
 - `tag`: `v${packageVersion}`
 - `title`: `Release v${packageVersion}`
 - `notes`: `Release version ${packageVersion}`
+- `generateNotes`: `false`
 - `assets`: enabled portable and MSI outputs
 - `commitMessage`: `chore(release): prepare ${packageVersion}`
 - `signTag`: `true`
@@ -122,6 +123,10 @@ approval occurred outside the interactive command, and `--publish-only` to
 publish already-built assets from an existing remote tag. Setting `draft: true`
 leaves the verified release as a draft. Setting `signTag: false` creates an
 annotated unsigned tag instead of the signed default.
+
+When `generateNotes` is `true` and `notes` is omitted, the release body is a
+simple `## Changes` list of commit subjects since the previous Git tag. An
+explicit `notes` value takes precedence.
 
 ## Hooks
 

@@ -27,6 +27,7 @@ describe("loadConfig", () => {
         app: { name: "Fixture", executable: "Fixture.exe" },
         release: {
           repository: "alysoid/fixture",
+          generateNotes: true,
           commitMessage: "release: \${packageVersion}",
           signTag: false
         }
@@ -37,6 +38,7 @@ describe("loadConfig", () => {
 
     expect(config.release).toMatchObject({
       commitMessage: "release: ${packageVersion}",
+      generateNotes: true,
       signTag: false,
     });
   });

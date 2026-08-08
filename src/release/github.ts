@@ -110,11 +110,18 @@ export async function createGitHubRelease(
   run: ProcessRunner = runProcess,
   capture: CaptureProcessRunner = captureProcess,
 ): Promise<void> {
-  const plan = await resolveGitHubRelease(config);
+  let plan = await resolveGitHubRelease(config);
+  const releaseConfig = config.release;
+  if (!releaseConfig) {
+    throw new AhkBuildError("RELEASE_DISABLED", "GitHub release publishing is not configured.");
+  }
   await assertGitHubAuthentication(config, run);
 
   let remote = await readRemoteRelease(config, plan, capture);
   if (!remote) {
+    if (releaseConfig.generateNotes && releaseConfig.notes === undefined) {
+      plan = { ...plan, notes: await generateReleaseNotes(config, capture) };
+    }
     logger.info(`Creating GitHub release ${plan.repository}@${plan.tag}...`);
     await run(
       "gh",
@@ -171,6 +178,50 @@ export async function createGitHubRelease(
   }
 
   logger.success(`Published and verified ${plan.tag}`);
+}
+
+async function generateReleaseNotes(
+  config: ResolvedConfig,
+  capture: CaptureProcessRunner,
+): Promise<string> {
+  const previous = await capture("git", ["describe", "--tags", "--abbrev=0", "HEAD^"], {
+    cwd: config.root,
+  });
+  if (previous.exitCode !== 0 && previous.exitCode !== 128) {
+    throw new AhkBuildError(
+      "GIT_COMMAND_FAILED",
+      previous.stderr.trim() || "Could not find the previous Git tag.",
+    );
+  }
+
+  const range = previous.exitCode === 0 ? `${previous.stdout.trim()}..HEAD` : "HEAD";
+  const log = await capture("git", ["log", "--format=%s", range], { cwd: config.root });
+  if (log.exitCode !== 0) {
+    throw new AhkBuildError(
+      "GIT_COMMAND_FAILED",
+      log.stderr.trim() || "Could not read Git release notes.",
+    );
+  }
+
+  const context = createTemplateContext(config);
+  const releaseConfig = config.release;
+  if (!releaseConfig) {
+    throw new AhkBuildError("RELEASE_DISABLED", "GitHub release publishing is not configured.");
+  }
+  const releaseCommit = interpolate(
+    releaseConfig.commitMessage ?? "chore(release): prepare ${packageVersion}",
+    context,
+  );
+  const subjects = log.stdout
+    .split(/\r?\n/)
+    .map((subject) => subject.trim())
+    .filter((subject) => subject && subject !== releaseCommit);
+
+  return [
+    "## Changes",
+    "",
+    ...(subjects.length ? subjects.map((subject) => `- ${subject}`) : ["- No changes."]),
+  ].join("\n");
 }
 
 async function readRemoteRelease(
