@@ -4,14 +4,22 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const ciWorkflowPath = path.join(root, ".github", "workflows", "ci.yml");
 const workflowPath = path.join(root, ".github", "workflows", "publish.yml");
 
 describe("publish workflow", () => {
-  it("uses current action runtimes and OIDC-only npm publishing", async () => {
+  it("pins CI actions to immutable commits", async () => {
+    const workflow = await readFile(ciWorkflowPath, "utf8");
+
+    expect(workflow).toContain("actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4");
+    expect(workflow).toContain("actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4");
+  });
+
+  it("uses pinned action runtimes and OIDC-only npm publishing", async () => {
     const workflow = await readFile(workflowPath, "utf8");
 
-    expect(workflow).toContain("actions/checkout@v7");
-    expect(workflow).toContain("actions/setup-node@v7");
+    expect(workflow).toContain("actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7");
+    expect(workflow).toContain("actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7");
     expect(workflow).toContain("node-version: 24");
     expect(workflow).not.toContain("registry-url:");
     expect(workflow).toContain("package-manager-cache: false");
