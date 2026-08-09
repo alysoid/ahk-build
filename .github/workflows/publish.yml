@@ -14,6 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - name: Verify canonical repository
         env:
           EXPECTED_REPOSITORY: alysoid/ahk-build
@@ -34,6 +36,14 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Verify tag and package version
         run: node scripts/verify-release-tag.mjs "$GITHUB_REF_NAME"
+      - name: Verify release tag belongs to main
+        run: |
+          git fetch --no-tags origin "+refs/heads/main:refs/remotes/origin/main"
+          tag_commit="$(git rev-parse "${GITHUB_REF}^{commit}")"
+          if ! git merge-base --is-ancestor "$tag_commit" origin/main; then
+            echo "Release tag $GITHUB_REF_NAME does not point to a commit on main." >&2
+            exit 1
+          fi
       - name: Determine release channel
         id: release
         run: |

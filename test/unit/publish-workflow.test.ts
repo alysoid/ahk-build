@@ -15,11 +15,17 @@ describe("publish workflow", () => {
     expect(workflow).toContain("node-version: 24");
     expect(workflow).not.toContain("registry-url:");
     expect(workflow).toContain("package-manager-cache: false");
+    expect(workflow).toContain("persist-credentials: false");
     expect(workflow).not.toContain("always-auth");
     expect(workflow).not.toContain("NPM_TOKEN");
     expect(workflow).toContain("id-token: write");
     expect(workflow).toContain('npm publish "$TARBALL" --registry=https://registry.npmjs.org');
     expect(workflow).toContain("--provenance");
+    expect(workflow).toContain(
+      'git fetch --no-tags origin "+refs/heads/main:refs/remotes/origin/main"',
+    );
+    expect(workflow).toContain('tag_commit="$(git rev-parse "${GITHUB_REF}^{commit}")"');
+    expect(workflow).toContain('git merge-base --is-ancestor "$tag_commit" origin/main');
   });
 
   it("keeps the release draft until the channel-specific npm publish succeeds", async () => {
