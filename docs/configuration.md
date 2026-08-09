@@ -42,6 +42,8 @@ Directory defaults are:
 
 Configured relative directory paths resolve from the project root. `AHK_BUILD_CACHE_DIR` overrides the default cache location; an explicit `directories.cache` takes precedence.
 
+`clean` refuses the filesystem root, the home directory, the project root, and any parent of the project root.
+
 ## Compilation
 
 | Field            | Default                     | Purpose                                                                          |

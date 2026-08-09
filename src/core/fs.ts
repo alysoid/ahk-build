@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 
 import { AhkBuildError } from "./errors.js";
@@ -35,4 +36,26 @@ export function normalizeArchivePath(target: string): string {
     throw new AhkBuildError("UNSAFE_ARCHIVE_PATH", `Unsafe archive path: ${target}`);
   }
   return normalized;
+}
+
+export function assertSafeDeletionTarget(target: string, projectRoot: string): void {
+  const resolvedTarget = path.resolve(target);
+  const resolvedProjectRoot = path.resolve(projectRoot);
+  const homeDirectory = path.resolve(os.homedir());
+
+  if (
+    resolvedTarget === path.parse(resolvedTarget).root ||
+    resolvedTarget === homeDirectory ||
+    isSameOrAncestor(resolvedTarget, resolvedProjectRoot)
+  ) {
+    throw new AhkBuildError("UNSAFE_CLEAN_TARGET", `Unsafe clean target: ${target}`);
+  }
+}
+
+function isSameOrAncestor(target: string, descendant: string): boolean {
+  const relative = path.relative(target, descendant);
+  return (
+    relative === "" ||
+    (!relative.startsWith(`..${path.sep}`) && relative !== ".." && !path.isAbsolute(relative))
+  );
 }
